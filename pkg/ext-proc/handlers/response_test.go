@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"testing"
 
 	extProcPb "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	"github.com/google/go-cmp/cmp"
+	logutil "sigs.k8s.io/gateway-api-inference-extension/pkg/ext-proc/util/logging"
 )
 
 const (
@@ -34,6 +36,8 @@ const (
 )
 
 func TestHandleResponseBody(t *testing.T) {
+	ctx := logutil.NewTestLoggerIntoContext(context.Background())
+
 	tests := []struct {
 		name    string
 		req     *extProcPb.ProcessingRequest_ResponseBody
@@ -70,8 +74,7 @@ func TestHandleResponseBody(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			server := &Server{}
 			reqCtx := &RequestContext{}
-			_, err := server.HandleResponseBody(reqCtx, &extProcPb.ProcessingRequest{Request: test.req})
-
+			_, err := server.HandleResponseBody(ctx, reqCtx, &extProcPb.ProcessingRequest{Request: test.req})
 			if err != nil {
 				if !test.wantErr {
 					t.Fatalf("HandleResponseBody returned unexpected error: %v, want %v", err, test.wantErr)

@@ -2,12 +2,14 @@
 package scheduling
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 
+	"github.com/go-logr/logr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	klog "k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/ext-proc/backend"
 	logutil "sigs.k8s.io/gateway-api-inference-extension/pkg/ext-proc/util/logging"
 )
@@ -82,8 +84,8 @@ var (
 		// request to make room for critical requests.
 		nextOnFailure: &filter{
 			name: "drop request",
-			filter: func(req *LLMRequest, pods []*backend.PodMetrics) ([]*backend.PodMetrics, error) {
-				klog.V(logutil.DEFAULT).InfoS("Request dropped", "request", req)
+			filter: func(logger logr.Logger, req *LLMRequest, pods []*backend.PodMetrics) ([]*backend.PodMetrics, error) {
+				logger.V(logutil.DEFAULT).Info("Request dropped", "request", req)
 				return []*backend.PodMetrics{}, status.Errorf(
 					codes.ResourceExhausted, "dropping request due to limited backend resources")
 			},
@@ -110,14 +112,15 @@ type PodMetricsProvider interface {
 }
 
 // Schedule finds the target pod based on metrics and the requested lora adapter.
-func (s *Scheduler) Schedule(req *LLMRequest) (targetPod backend.Pod, err error) {
-	klog.V(logutil.VERBOSE).InfoS("Scheduling a request", "request", req, "metrics", s.podMetricsProvider.AllPodMetrics())
-	pods, err := s.filter.Filter(req, s.podMetricsProvider.AllPodMetrics())
+func (s *Scheduler) Schedule(ctx context.Context, req *LLMRequest) (targetPod backend.Pod, err error) {
+	logger := log.FromContext(ctx).WithValues("request", req)
+	logger.V(logutil.VERBOSE).Info("Scheduling a request", "metrics", s.podMetricsProvider.AllPodMetrics())
+	pods, err := s.filter.Filter(logger, req, s.podMetricsProvider.AllPodMetrics())
 	if err != nil || len(pods) == 0 {
 		return backend.Pod{}, fmt.Errorf(
 			"failed to apply filter, resulted %v pods, this should never happen: %w", len(pods), err)
 	}
-	klog.V(logutil.VERBOSE).InfoS("Selecting a random pod from the candidates", "candidatePods", pods)
+	logger.V(logutil.VERBOSE).Info("Selecting a random pod from the candidates", "candidatePods", pods)
 	i := rand.Intn(len(pods))
 	return pods[i].Pod, nil
 }

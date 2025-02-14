@@ -13,10 +13,10 @@ import (
 	"time"
 
 	extProcPb "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
+	"github.com/go-logr/logr"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"k8s.io/apimachinery/pkg/types"
-	klog "k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/ext-proc/backend"
@@ -108,14 +108,15 @@ func (r *ExtProcServerRunner) SetupWithManager(mgr ctrl.Manager) error {
 // AsRunnable returns a Runnable that can be used to start the ext-proc gRPC server.
 // The runnable implements LeaderElectionRunnable with leader election disabled.
 func (r *ExtProcServerRunner) AsRunnable(
+	logger logr.Logger,
 	podDatastore *backend.K8sDatastore,
 	podMetricsClient backend.PodMetricsClient,
 ) manager.Runnable {
 	return runnable.NoLeaderElection(manager.RunnableFunc(func(ctx context.Context) error {
 		// Initialize backend provider
 		pp := backend.NewProvider(podMetricsClient, podDatastore)
-		if err := pp.Init(r.RefreshPodsInterval, r.RefreshMetricsInterval, r.RefreshPrometheusMetricsInterval); err != nil {
-			klog.ErrorS(err, "Failed to initialize backend provider")
+		if err := pp.Init(logger.WithName("provider"), r.RefreshPodsInterval, r.RefreshMetricsInterval, r.RefreshPrometheusMetricsInterval); err != nil {
+			logger.Error(err, "Failed to initialize backend provider")
 			return err
 		}
 
@@ -127,10 +128,10 @@ func (r *ExtProcServerRunner) AsRunnable(
 				cert, err = tls.LoadX509KeyPair(r.CertPath+"/tls.crt", r.CertPath+"/tls.key")
 			} else {
 				// Create tls based credential.
-				cert, err = createSelfSignedTLSCertificate()
+				cert, err = createSelfSignedTLSCertificate(logger)
 			}
 			if err != nil {
-				klog.ErrorS(err, "Failed to create self signed certificate")
+				logger.Error(err, "Failed to create self signed certificate")
 				return err
 			}
 
@@ -152,11 +153,11 @@ func (r *ExtProcServerRunner) AsRunnable(
 	}))
 }
 
-func createSelfSignedTLSCertificate() (tls.Certificate, error) {
+func createSelfSignedTLSCertificate(logger logr.Logger) (tls.Certificate, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		klog.ErrorS(err, "Failed to create serial number for self-signed cert")
+		logger.Error(err, "Failed to create serial number for self-signed cert")
 		return tls.Certificate{}, err
 	}
 	now := time.Now()
@@ -175,13 +176,13 @@ func createSelfSignedTLSCertificate() (tls.Certificate, error) {
 
 	priv, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		klog.ErrorS(err, "Failed to generate key for self-signed cert")
+		logger.Error(err, "Failed to generate key for self-signed cert")
 		return tls.Certificate{}, err
 	}
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
-		klog.ErrorS(err, "Failed to create self-signed certificate")
+		logger.Error(err, "Failed to create self-signed certificate")
 		return tls.Certificate{}, err
 	}
 
@@ -189,7 +190,7 @@ func createSelfSignedTLSCertificate() (tls.Certificate, error) {
 
 	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
-		klog.ErrorS(err, "Failed to marshal private key for self-signed certificate")
+		logger.Error(err, "Failed to marshal private key for self-signed certificate")
 		return tls.Certificate{}, err
 	}
 	keyBytes := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privBytes})

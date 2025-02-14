@@ -1,12 +1,13 @@
 package metrics
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	compbasemetrics "k8s.io/component-base/metrics"
 	"k8s.io/component-base/metrics/legacyregistry"
-	klog "k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	logutil "sigs.k8s.io/gateway-api-inference-extension/pkg/ext-proc/util/logging"
 )
 
@@ -144,9 +145,9 @@ func RecordRequestSizes(modelName, targetModelName string, reqSize int) {
 }
 
 // RecordRequestLatencies records duration of request.
-func RecordRequestLatencies(modelName, targetModelName string, received time.Time, complete time.Time) bool {
+func RecordRequestLatencies(ctx context.Context, modelName, targetModelName string, received time.Time, complete time.Time) bool {
 	if !complete.After(received) {
-		klog.V(logutil.DEFAULT).ErrorS(nil, "Request latency values are invalid",
+		log.FromContext(ctx).V(logutil.DEFAULT).Error(nil, "Request latency values are invalid",
 			"modelName", modelName, "targetModelName", targetModelName, "completeTime", complete, "receivedTime", received)
 		return false
 	}
