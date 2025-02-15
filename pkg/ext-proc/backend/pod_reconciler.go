@@ -26,7 +26,7 @@ func (c *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	logger := log.FromContext(ctx)
 	inferencePool, err := c.Datastore.getInferencePool()
 	if err != nil {
-		logger.V(logutil.DEFAULT).Info("Skipping reconciling Pod because the InferencePool is not available yet", "error", err)
+		logger.V(logutil.TRACE).Info("Skipping reconciling Pod because the InferencePool is not available yet", "error", err)
 		// When the inferencePool is initialized it lists the appropriate pods and populates the datastore, so no need to requeue.
 		return ctrl.Result{}, nil
 	} else if inferencePool.Namespace != req.Namespace {
