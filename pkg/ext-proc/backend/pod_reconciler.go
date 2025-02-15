@@ -37,11 +37,11 @@ func (c *PodReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 
 	pod := &corev1.Pod{}
 	if err := c.Get(ctx, req.NamespacedName, pod); err != nil {
-		logger.V(logutil.DEFAULT).Error(err, "Unabled to get pod", "name", req.NamespacedName)
 		if apierrors.IsNotFound(err) {
 			c.Datastore.pods.Delete(pod)
 			return ctrl.Result{}, nil
 		}
+		logger.V(logutil.DEFAULT).Error(err, "Unable to get pod", "name", req.NamespacedName)
 		return ctrl.Result{}, err
 	}
 
