@@ -82,7 +82,8 @@ func (s *Server) HandleRequestBody(
 	if err != nil {
 		return nil, fmt.Errorf("failed to find target pod: %w", err)
 	}
-	loggerVerbose.Info("Target model and pod selected", "model", llmReq.ResolvedTargetModel, "pod", targetPod)
+	logger.V(logutil.DEFAULT).Info("Request handled",
+		"model", llmReq.Model, "targetModel", llmReq.ResolvedTargetModel, "endpoint", targetPod)
 
 	reqCtx.Model = llmReq.Model
 	reqCtx.ResolvedTargetModel = llmReq.ResolvedTargetModel
@@ -149,7 +150,7 @@ func HandleRequestHeaders(
 ) *extProcPb.ProcessingResponse {
 	r := req.Request
 	h := r.(*extProcPb.ProcessingRequest_RequestHeaders)
-	log.FromContext(ctx).Info("Handling request headers", "headers", h)
+	log.FromContext(ctx).V(logutil.VERBOSE).Info("Handling request headers", "headers", h)
 
 	resp := &extProcPb.ProcessingResponse{
 		Response: &extProcPb.ProcessingResponse_RequestHeaders{
