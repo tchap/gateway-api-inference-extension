@@ -32,8 +32,7 @@ func (s *Server) HandleRequestBody(
 	v := req.Request.(*extProcPb.ProcessingRequest_RequestBody)
 	var rb map[string]interface{}
 	if err := json.Unmarshal(v.RequestBody.Body, &rb); err != nil {
-		logger.V(logutil.DEFAULT).Error(err, "Error unmarshaling request body")
-		return nil, fmt.Errorf("error unmarshaling request body: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal request body: %w", err)
 	}
 	loggerVerbose.Info("Request body unmarshalled", "body", rb)
 
@@ -72,8 +71,7 @@ func (s *Server) HandleRequestBody(
 		rb["model"] = llmReq.ResolvedTargetModel
 		requestBody, err = json.Marshal(rb)
 		if err != nil {
-			logger.V(logutil.DEFAULT).Error(err, "Error marshaling request body")
-			return nil, fmt.Errorf("error marshaling request body: %v", err)
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
 		}
 		loggerVerbose.Info("Updated request body marshalled", "body", string(requestBody))
 	}
