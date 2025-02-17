@@ -129,6 +129,8 @@ func (ds *K8sDatastore) flushPodsAndRefetch(ctx context.Context, ctrlClient clie
 		LabelSelector: selectorFromInferencePoolSelector(newServerPool.Spec.Selector),
 		Namespace:     newServerPool.Namespace,
 	}); err != nil {
+		// XXX: Shouldn't we at least return on listing failed?
+		//      Or is that OK to clear the pod map on error?
 		log.FromContext(ctx).V(logutil.DEFAULT).Error(err, "Failed to list clients")
 	}
 	ds.pods.Clear()
