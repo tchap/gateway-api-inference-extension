@@ -126,22 +126,18 @@ func (r *ExtProcServerRunner) AsRunnable(
 			var err error
 			if r.CertPath != "" {
 				cert, err = tls.LoadX509KeyPair(r.CertPath+"/tls.crt", r.CertPath+"/tls.key")
-if err != nil {
+				if err != nil {
 					logger.Error(err, "Failed to load certificate key pair",
 						"publicKeyPath", r.CertPath+"/tls.crt", "privateKeyPath", r.CertPath+"/tls.key")
 					return err
 				}
 			} else {
 				// Create tls based credential.
-				cert, err = createSelfSignedTLSCertificate()
+				cert, err = createSelfSignedTLSCertificate(logger)
 				if err != nil {
-					logger.Error(err, "Failed to create self-signed certificate")
+					// Logging handled in createSelfSignedTLSCertificate.
 					return err
 				}
-			}
-			if err != nil {
-				logger.Error(err, "Failed to create self signed certificate")
-				return err
 			}
 
 			creds := credentials.NewTLS(&tls.Config{
