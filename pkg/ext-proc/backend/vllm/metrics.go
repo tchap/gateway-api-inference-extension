@@ -49,12 +49,10 @@ func (p *PodMetricsClientImpl) FetchMetrics(
 	url := fmt.Sprintf("http://%s/metrics", pod.Address)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		loggerDefault.Error(err, "Failed create HTTP request", "method", http.MethodGet, "url", url)
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		loggerDefault.Error(err, "Failed to fetch metrics", "pod", pod)
 		return nil, fmt.Errorf("failed to fetch metrics from %s: %w", pod, err)
 	}
 	defer func() {
@@ -62,7 +60,6 @@ func (p *PodMetricsClientImpl) FetchMetrics(
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		loggerDefault.Error(nil, "Unexpected status code returned", "pod", pod, "statusCode", resp.StatusCode)
 		return nil, fmt.Errorf("unexpected status code from %s: %v", pod, resp.StatusCode)
 	}
 

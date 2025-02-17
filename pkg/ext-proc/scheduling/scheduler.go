@@ -3,7 +3,7 @@ package scheduling
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"math/rand"
 
 	"github.com/go-logr/logr"
@@ -116,9 +116,11 @@ func (s *Scheduler) Schedule(ctx context.Context, req *LLMRequest) (targetPod ba
 	logger := log.FromContext(ctx).WithValues("request", req)
 	logger.V(logutil.VERBOSE).Info("Scheduling a request", "metrics", s.podMetricsProvider.AllPodMetrics())
 	pods, err := s.filter.Filter(logger, req, s.podMetricsProvider.AllPodMetrics())
-	if err != nil || len(pods) == 0 {
-		return backend.Pod{}, fmt.Errorf(
-			"failed to apply filter, resulted %v pods, this should never happen: %w", len(pods), err)
+	if err != nil {
+		return backend.Pod{}, err
+	}
+	if len(pods) == 0 {
+		return backend.Pod{}, errors.New("filter returned zero pods on success")
 	}
 	logger.V(logutil.VERBOSE).Info("Selecting a random pod from the candidates", "candidatePods", pods)
 	i := rand.Intn(len(pods))

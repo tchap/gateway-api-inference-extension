@@ -78,7 +78,7 @@ func (s *Server) HandleRequestBody(
 
 	targetPod, err := s.scheduler.Schedule(ctx, llmReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find target pod: %w", err)
+		return nil, fmt.Errorf("failed to select target pod: %w", err)
 	}
 	logger.V(logutil.DEFAULT).Info("Request handled",
 		"model", llmReq.Model, "targetModel", llmReq.ResolvedTargetModel, "endpoint", targetPod)
