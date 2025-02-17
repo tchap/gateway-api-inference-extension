@@ -100,7 +100,11 @@ func (s *Server) Process(srv extProcPb.ExternalProcessor_ProcessServer) error {
 			resp, err = s.HandleResponseBody(ctx, reqCtx, req)
 			if err == nil && reqCtx.ResponseComplete {
 				reqCtx.ResponseCompleteTimestamp = time.Now()
-				metrics.RecordRequestLatencies(ctx, reqCtx.Model, reqCtx.ResolvedTargetModel, reqCtx.RequestReceivedTimestamp, reqCtx.ResponseCompleteTimestamp)
+				if err := metrics.RecordRequestLatencies(
+					reqCtx.Model, reqCtx.ResolvedTargetModel, reqCtx.RequestReceivedTimestamp, reqCtx.ResponseCompleteTimestamp,
+				); err != nil {
+					logger.V(logutil.DEFAULT).Error(err, "Failed to record request latencies", "context", reqCtx)
+				}
 				metrics.RecordResponseSizes(reqCtx.Model, reqCtx.ResolvedTargetModel, reqCtx.ResponseSize)
 				metrics.RecordInputTokens(reqCtx.Model, reqCtx.ResolvedTargetModel, reqCtx.Response.Usage.PromptTokens)
 				metrics.RecordOutputTokens(reqCtx.Model, reqCtx.ResolvedTargetModel, reqCtx.Response.Usage.CompletionTokens)

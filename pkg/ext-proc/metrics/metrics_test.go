@@ -1,14 +1,12 @@
 package metrics
 
 import (
-	"context"
 	"os"
 	"testing"
 	"time"
 
 	"k8s.io/component-base/metrics/legacyregistry"
 	"k8s.io/component-base/metrics/testutil"
-	logutil "sigs.k8s.io/gateway-api-inference-extension/pkg/ext-proc/util/logging"
 )
 
 const (
@@ -92,7 +90,6 @@ func TestRecordRequestCounterandSizes(t *testing.T) {
 }
 
 func TestRecordRequestLatencies(t *testing.T) {
-	ctx := logutil.NewTestLoggerIntoContext(context.Background())
 	timeBaseline := time.Now()
 	type requests struct {
 		modelName       string
@@ -151,9 +148,9 @@ func TestRecordRequestLatencies(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.name, func(t *testing.T) {
 			for _, req := range scenario.reqs {
-				success := RecordRequestLatencies(ctx, req.modelName, req.targetModelName, req.receivedTime, req.completeTime)
-				if success == scenario.invalid {
-					t.Errorf("got record success(%v), but the request expects invalid(%v)", success, scenario.invalid)
+				err := RecordRequestLatencies(req.modelName, req.targetModelName, req.receivedTime, req.completeTime)
+				if (err != nil) != scenario.invalid {
+					t.Errorf("got record error = %v, but the request expects invalid = %v", err, scenario.invalid)
 				}
 			}
 
